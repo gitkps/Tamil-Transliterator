@@ -1,10 +1,186 @@
 <!DOCTYPE html>
 <html>
+<head>
+    <meta charset="UTF-8">
+    <title>Tamil Transliterator v3</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 20px;
+            background-color: #f0f2f5;
+        }
+        .container {
+            background-color: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #1a73e8;
+            margin-bottom: 24px;
+        }
+        .version {
+            color: #666;
+            font-size: 14px;
+            margin-top: -20px;
+            margin-bottom: 20px;
+        }
+        .input-group {
+            margin-bottom: 20px;
+        }
+        textarea {
+            width: 100%;
+            min-height: 120px;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            resize: vertical;
+            margin-bottom: 10px;
+        }
+        button {
+            background-color: #1a73e8;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.2s;
+        }
+        button:hover {
+            background-color: #1557b0;
+        }
+        #output {
+            margin-top: 20px;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background-color: #f8f9fa;
+            min-height: 60px;
+            font-size: 16px;
+            line-height: 1.5;
+            min-height: 120px;
+            max-height: 300px; /* Set a max height if needed */
+            overflow-y: auto; /* Enables vertical scrolling */
+            white-space: pre-wrap; /* Preserves line breaks and spacing */
+
+        }
+        .info {
+            margin-top: 20px;
+            color: #666;
+            font-size: 14px;
+        }
+    </style>
+</head>
 <body>
+    <div class="container">
+        <h1>Tamil to English Transliterator</h1>
+        <div class="version">Version 3.0 - With Complex Characters</div>
+        <div class="input-group">
+            <textarea id="tamilText" placeholder="Enter Tamil text here..."></textarea>
+            <button onclick="transliterate()">Transliterate</button>
+        </div>
+        <div id="output"></div>
+        <div class="info">
+            Features in v3:
+            • Correct pulli handling (க் → k)
+            • Character distinctions (ண/ன, ல/ள, ர/ற)
+            • Complex combinations (ஸ்ரீ, க்ஷ)
+            • Special characters (ஃ)
+        </div>
+    </div>
 
-<h1>My Home Page on Trial2</h1>
+    <script>
+        const tamilMap = {
+            // Vowels
+            'அ': 'a', 'ஆ': 'aa', 'இ': 'i', 'ஈ': 'ee', 'உ': 'u', 'ஊ': 'oo',
+            'எ': 'e', 'ஏ': 'ae', 'ஐ': 'ai', 'ஒ': 'o', 'ஓ': 'oa', 'ஔ': 'au',
 
+            // Consonants with distinctions
+            // I felt there was no need to substitute ற' with 'Ra'. So I modified it to ற': 'ra',
+            'க': 'ka', 'ங': 'nga', 'ச': 'cha', 'ஞ': 'nya', 'ட': 'ta', 
+            'ண': 'Na', 'த': 'tha', 'ந': 'na', 'ன': 'na', 'ப': 'pa', 
+            'ம': 'ma', 'ய': 'ya', 'ர': 'ra', 'ற': 'ra', 'ல': 'la', 
+            'ள': 'La', 'வ': 'va', 'ழ': 'zha',
 
-<a href="page2.html">Page 2</a>
+            // Sanskrit-derived consonants
+            'ஜ': 'ja', 'ஷ': 'sha', 'ஸ': 'sa', 'ஹ': 'ha', 'ஶ': 'sha',
+
+            // Vowel markers
+            'ா': 'aa', 'ி': 'i', 'ீ': 'ee', 'ு': 'u', 'ூ': 'oo',
+            'ெ': 'e', 'ே': 'ae', 'ை': 'ai', 'ொ': 'o', 'ோ': 'oa', 'ௌ': 'au',
+            '்': '',
+
+            // Special character
+            'ஃ': 'ak'
+        };
+
+        // Special combinations that need to be checked first
+        const specialCombos = {
+            'ஸ்ரீ': 'sri',
+            'க்ஷ': 'ksha',
+            'ஜ்ஞ': 'gnya',
+            'க்ர': 'kra',
+            'ப்ர': 'pra',
+            'ட்ர': 'tra',
+            'ஸ்ர': 'sra'
+        };
+
+        function transliterate() {
+            const tamilText = document.getElementById('tamilText').value;
+            let result = '';
+            let i = 0;
+            
+            while (i < tamilText.length) {
+                // First check for special combinations
+                let matchFound = false;
+                for (let combo in specialCombos) {
+                    if (tamilText.substr(i, combo.length) === combo) {
+                        result += specialCombos[combo];
+                        i += combo.length;
+                        matchFound = true;
+                        break;
+                    }
+                }
+                
+                if (matchFound) continue;
+
+                const currentChar = tamilText[i];
+                const nextChar = i < tamilText.length - 1 ? tamilText[i + 1] : '';
+                
+                // Handle consonant + pulli combinations
+                if (tamilMap[currentChar] && nextChar === '்') {
+                    result += tamilMap[currentChar].slice(0, -1);
+                    i += 2;
+                }
+                // Handle vowel markers
+                else if (tamilMap[currentChar] && currentChar.match(/[ாிீுூெேைொோௌ]/)) {
+                    if (result.endsWith('a')) {
+                        result = result.slice(0, -1) + tamilMap[currentChar];
+                    } else {
+                        result += tamilMap[currentChar];
+                    }
+                    i++;
+                }
+                // Handle regular characters
+                else {
+                    result += tamilMap[currentChar] || currentChar;
+                    i++;
+                }
+            }
+            
+            // Post-processing to fix "RR" to "tr" for better readability
+            result = result.replace(/rr/g, 'tr');
+            
+            // Modification to reproduce line breaks in output just as in input
+            //document.getElementById('output').textContent = result;
+            document.getElementById('output').innerHTML = result.replace(/\n/g, '<br>');
+
+            
+        }
+    </script>
 </body>
 </html>
